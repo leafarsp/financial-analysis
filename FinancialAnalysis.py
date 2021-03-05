@@ -373,7 +373,7 @@ class StockAnalysis:
 
         #self.tempNormPrices = tempNormPrices[tempNormPrices.iloc[-1,:].sort_values().index]
         self.tempNormPrices.iloc[:,(first_position_number-1):(first_position_number+qt_stocks)].plot(title = f'Top ações: '
-                                                    f'{first_position_number} até {first_position_number+qt_stocks-1}')
+                                                    f'{first_position_number} até {first_position_number+qt_stocks-1}').plot(figSize=(30, 10))
 
     def plotHistogram(self):
         pass
