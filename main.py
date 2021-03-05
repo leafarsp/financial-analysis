@@ -4,8 +4,8 @@ import FinancialAnalysis
 
 
 def main():
-    prices = pd.read_csv('DataBasePython - Price.csv', index_col="Date", parse_dates=True)
-    categories = pd.read_csv('DataBasePython-Names.csv', index_col='Código')
+    prices = pd.read_csv('testDataBases\\DataBasePython - Price.csv', index_col="Date", parse_dates=True)
+    categories = pd.read_csv('testDataBases\\DataBasePython-Names.csv', index_col='Código')
     fa = FinancialAnalysis.StockAnalysis(prices, categories)
 
     #fa.getStockDataByCategory(setor='Financeiro', subsetor='Exploração de Imóveis',
@@ -58,17 +58,42 @@ def main():
     #mktAvg.plot()
     #fa.plotMktAvg(startDate='2021')
     #exit(1)
-    #buttonPressed = False
-    #while (not buttonPressed):
-    #    buttonPressed = plt.waitforbuttonpress()
 
 
-    #fa.plotMktAvgBySegmento(startDate='2021',folder_path='Averages',segmento='Comércio')
 
-    stocksByCat = fa.getStocksByCategory(setor = 'Bens Industriais')
-    #stocksByCat = fa.stockCategories[(fa.stockCategories.loc[:, 'SETOR'] == 'Bens industriais')].index
+    #fa.plotMktAvgBySubsetor(startDate='2021',folder_path='Averages',subsetor='Comércio')
+    #fa.plotMktAvgBySubsetor(startDate='2021', folder_path='Averages', subsetor=['Comércio', 'Comércio e Distribuição'])
+
+    #stocksByCat = fa.getStocksByCategory(setor = 'Bens Industriais')
+    first_position_number=0
+    qt_stocks=10
+    #tempNormPrices = fa.getStockDataByCategory(startDate='2021')
+
+    #fa.tempNormPrices = tempNormPrices[tempNormPrices.iloc[-1, :].sort_values(ascending=False).index]
+    #temp_df = fa.getStockDataByCategory(startDate='2021').iloc[:, first_position_number:(first_position_number + qt_stocks)]
+
+    #temp_df.plot(title=f'Top ações: {first_position_number} até {first_position_number + qt_stocks-1}')
+    #print(temp_df)
+    fa.plotTopStocks(first_position_number=1,qt_stocks=20, start_date='2021')
+    #print(fa.getStockDataByCategory(startDate='2021'))
+    #exit(1)
+
+    #fa.tempNormPrices = fa.getStockDataByCategory(startDate='2021')
+
+    # self.tempNormPrices = tempNormPrices[tempNormPrices.iloc[-1,:].sort_values().index]
+    #fa.tempNormPrices.iloc[:, first_position_number:(first_position_number + qt_stocks)].plot(title=f'Top ações: '
+    #                                                                                                  f'{first_position_number} até {first_position_number + qt_stocks - 1}')
+
+    #print(fa.getStockList())
+    #print(fa.getNormalizedPrices(startDate='2021'))
+    #print(fa.getStocksByCategory())
+    buttonPressed = False
+    while (not buttonPressed):
+        buttonPressed = plt.waitforbuttonpress()
+
+    #stocksByCat = fa.stockCategories[(fa.stockCategories.loc[:, 'SETOR'] == 'Bens industriais')]
     #stocksByCat = fa.stockCategories[(fa.stockCategories.loc[:, 'SUBSETOR'] == 'Comércio')].index
-    print(stocksByCat)
+    #print(stocksByCat)
         #if i > 20:
             #break
     #plt.show()

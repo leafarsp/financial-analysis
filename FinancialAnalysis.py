@@ -17,6 +17,7 @@ class StockAnalysis:
         self.price = priceData
         self.stockCategories = stocksCategories
         self.returns = None
+        self.tempNormPrices=None
 
     def getStockList(self):
         return self.price.columns
@@ -76,10 +77,12 @@ class StockAnalysis:
             keywordSegmento = (self.stockCategories.loc[:, 'SEGMENTO'] == segmento)
         # stocksByCat = self.stockCategories[keyword].index
         """
+
         if setor == 'all':
             if subsetor == 'all':
                 if (segmento == 'all'):
                     stocksByCat = self.stockCategories.index
+
                 else:
                     stocksByCat = self.stockCategories[(self.stockCategories.loc[:, 'SEGMENTO'] == segmento)].index
             else:
@@ -138,7 +141,7 @@ class StockAnalysis:
                     temp_norm_prices.loc[date, stock] = \
                         temp_norm_prices.loc[prev_date, stock] * (1 + temp_returns.loc[date, stock])
                 prev_date = date
-        return temp_norm_prices
+        return temp_norm_prices[temp_norm_prices.iloc[-1, :].sort_values(ascending=False).index]
 
     def getPrice(self):
         return self.price
@@ -163,7 +166,9 @@ class StockAnalysis:
                                startDate='2016-01-01', endDate='today'):
         if endDate == 'today':
             endDate = pd.to_datetime("today")
+
         stockList = self.getStocksByCategory(setor, subsetor, segmento)
+
         return self.getNormalizedPrices(initialAmount=initialAmount, stocks=stockList, startDate=startDate, \
                                         endDate=endDate)
 
@@ -286,6 +291,7 @@ class StockAnalysis:
 
         return df_means.dropna(how='all', axis=0)
 
+
     def plotMktAvg(self, setores='all', folder_path='charts', initialAmount=1, startDate='2016-01-01', endDate='today'):
         self.getMarketAvgData(setores=setores, folder_path=folder_path,
                               initialAmount=1, startDate=startDate, endDate=endDate).plot(
@@ -316,7 +322,8 @@ class StockAnalysis:
             plt.savefig(f'{folder}\\Médias {setor}.png')
 
 
-    def plotMktAvgBySegmento(self, segmento = 'all', folder_path='charts', initialAmount=1, startDate='2016-01-01', endDate='today'):
+    def plotMktAvgBySubsetor(self, subsetor = 'all', folder_path='charts', initialAmount=1, startDate='2016-01-01', endDate='today'):
+        print("plotting Mkt Avg By Subsetor")
         if endDate == 'today':
             endDate = pd.to_datetime("today")
         numValidCats = self.__getNumberOfValidSetoresAndSubsetores()
@@ -328,24 +335,45 @@ class StockAnalysis:
         temp_df = self.getPrice().loc[pd.Timestamp(startDate):pd.Timestamp(endDate)]
 
         # print(df_means.head())
-        if type(segmento) == str:
-            if segmento == 'all':
+        if type(subsetor) == str:
+            if subsetor == 'all':
                 pass
             else:
                 pass
 
 
-        df_columns = self.__getValidSubsetores(segmento)
+        df_columns = self.__getValidSegmentos(subsetor)
 
         df_means = pd.DataFrame(data=None, index=temp_df.index, columns=df_columns)
 
+        if type(subsetor) == list:
+            for localSubsetor in subsetor:
+                for segmento in df_columns:
+                    stockData = self.getStockDataByCategory(segmento=segmento, initialAmount=initialAmount,
+                                                            startDate=startDate, endDate=endDate)
+                    df_means[segmento] = stockData.mean(axis=1)
 
-        for subsetor in df_columns:
-            stockData = self.getStockDataByCategory(subsetor=subsetor, initialAmount=initialAmount,
-                                                    startDate=startDate, endDate=endDate)
-            df_means[subsetor] = stockData.mean(axis=1)
-        df_means.dropna(how='all', axis=0).plot(title=f'Médias {segmento}').plot(figSize=(30, 10))
-        plt.savefig(f'{folder}\\Médias {segmento}.png')
+        else:
+            for segmento in df_columns:
+                stockData = self.getStockDataByCategory(segmento=segmento, initialAmount=initialAmount,
+                                                        startDate=startDate, endDate=endDate)
+                df_means[segmento] = stockData.mean(axis=1)
+
+        text_means = str(f'Média {subsetor}').replace("'","").replace("[","").replace("]","")
+        df_means[f'{text_means}'] = df_means.mean(axis=1)
+        df_means.dropna(how='all', axis=0).plot(title=f'{text_means}').plot(figSize=(30, 10))
+        plt.savefig(f'{folder}\\{text_means}.png')
+
+    def plotTopStocks(self, first_position_number=1, qt_stocks=10, start_date='2020-01-01', end_date='today', initial_amount=1):
+
+        #TODO: criar uma função que compara se o tempNormPrices tem as mesmas datas e as mesmas colunas que os parâmetros dessa função
+        #caso tenha, não calcular novamente.
+        self.tempNormPrices = self.getStockDataByCategory(initialAmount=initial_amount, startDate=start_date, endDate=end_date)
+
+
+        #self.tempNormPrices = tempNormPrices[tempNormPrices.iloc[-1,:].sort_values().index]
+        self.tempNormPrices.iloc[:,(first_position_number-1):(first_position_number+qt_stocks)].plot(title = f'Top ações: '
+                                                    f'{first_position_number} até {first_position_number+qt_stocks-1}')
 
     def plotHistogram(self):
         pass
@@ -399,3 +427,19 @@ class StockAnalysis:
 
         return validSetor
 
+    def __getValidSegmentos(self, subsetores):
+        validSetor= []
+        if type(subsetores) == str:
+            if subsetores != 'any':
+                for segmento in self.getSegmentos():
+                    stocks = self.getStocksByCategory(subsetor=subsetores, segmento=segmento)
+                    if (stocks.size > 0):
+                        validSetor.append(segmento)
+        else:
+            for subsetor in subsetores:
+                for segmento in self.getSegmentos():
+                    stocks = self.getStocksByCategory(subsetor=subsetor, segmento=segmento)
+                    if (stocks.size > 0):
+                        validSetor.append(segmento)
+
+        return validSetor
