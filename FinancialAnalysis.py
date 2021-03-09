@@ -1,7 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 import io
 
+#08/03/2021
 
 # from google.colab import files
 
@@ -18,6 +20,7 @@ class StockAnalysis:
         self.stockCategories = stocksCategories
         self.returns = None
         self.tempNormPrices=None
+        self.tempGrouth = None
 
     def getStockList(self):
         return self.price.columns
@@ -141,7 +144,31 @@ class StockAnalysis:
                     temp_norm_prices.loc[date, stock] = \
                         temp_norm_prices.loc[prev_date, stock] * (1 + temp_returns.loc[date, stock])
                 prev_date = date
-        return temp_norm_prices[temp_norm_prices.iloc[-1, :].sort_values(ascending=False).index]
+
+        #TODO usar as funções abaixo para organizar as colunas através do crescimento, não apenas do valor final
+        #jeito rápido de fazer isso:
+        #adicionar uma linha no final com os crescimentos, organizar as colunas e em seguida deletar essa linha;
+
+        #np.polyfit(xspace,y,1)[0] -- ax+b, esse seria o "a"
+        growths = self.__calculateGrowth(temp_norm_prices)
+        print(growths)
+        temp_norm_prices.append(growths, ignore_index=True)
+        print(temp_norm_prices.iloc[-3:-1, 1:3])
+        temp_norm_prices_organized = temp_norm_prices[temp_norm_prices.iloc[-1, :].sort_values(ascending=False).index]
+
+        #print(temp_norm_prices_organized.iloc[-3:-1,:])
+        #print(temp_norm_prices_organized.iloc[1:2, :])
+        #exit(1)
+        return temp_norm_prices_organized.iloc[:-1,:]
+
+    def __calculateGrowth(self,normalized_prices):
+        temp_df = pd.DataFrame(data=None,index = ['growth'], columns=normalized_prices.columns)
+        size_prices = normalized_prices.index.size
+        xspace = np.linspace(1, size_prices, size_prices)
+        for column in normalized_prices.columns:
+            yspace = normalized_prices[column].astype('float32').to_numpy()
+            temp_df.loc['growth',column] = np.polyfit(x=xspace,y=yspace,deg=1)[0]
+        return temp_df
 
     def getPrice(self):
         return self.price
@@ -374,6 +401,17 @@ class StockAnalysis:
         #self.tempNormPrices = tempNormPrices[tempNormPrices.iloc[-1,:].sort_values().index]
         self.tempNormPrices.iloc[:,(first_position_number-1):(first_position_number+qt_stocks)].plot(title = f'Top ações: '
                                                     f'{first_position_number} até {first_position_number+qt_stocks-1}').plot(figSize=(30, 10))
+
+    def plotAllTopStocks(self,folder_path='charts', start_date='2020-01-01',end_date='today', initial_amount=1):
+        self.tempNormPrices = self.getStockDataByCategory(initialAmount=initial_amount, startDate=start_date,
+                                                          endDate=end_date)
+        total_stocks=self.tempNormPrices.columns.size
+        for i in range(1,total_stocks,10):
+            print(f'Ploting stocks from {i} to {i+10-1}')
+            print(f'{self.tempNormPrices.iloc[:, (i - 1):(i+ 10)].columns}')
+            self.tempNormPrices.iloc[:, (i - 1):(i+ 10)].plot(title=f'Top ações: '
+                  f'{i} até {i + 10 - 1}').plot(figSize=(30, 10))
+            plt.savefig(f'{folder_path}\\Top {i} até {i+10-1}.png')
 
     def plotHistogram(self):
         pass
