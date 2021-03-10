@@ -145,21 +145,16 @@ class StockAnalysis:
                         temp_norm_prices.loc[prev_date, stock] * (1 + temp_returns.loc[date, stock])
                 prev_date = date
 
-        #TODO usar as funções abaixo para organizar as colunas através do crescimento, não apenas do valor final
-        #jeito rápido de fazer isso:
-        #adicionar uma linha no final com os crescimentos, organizar as colunas e em seguida deletar essa linha;
-
         #np.polyfit(xspace,y,1)[0] -- ax+b, esse seria o "a"
         growths = self.__calculateGrowth(temp_norm_prices)
-        print(growths)
-        temp_norm_prices.append(growths, ignore_index=True)
-        print(temp_norm_prices.iloc[-3:-1, 1:3])
-        temp_norm_prices_organized = temp_norm_prices[temp_norm_prices.iloc[-1, :].sort_values(ascending=False).index]
+        #print(growths.columns)
+        #print(temp_norm_prices)
+        #temp_norm_prices_organized = temp_norm_prices.reindex(columns=growths.columns)
+        temp_norm_prices_organized= temp_norm_prices[growths.columns]
+        #print(growths)
+        #print(temp_norm_prices_organized.columns)
 
-        #print(temp_norm_prices_organized.iloc[-3:-1,:])
-        #print(temp_norm_prices_organized.iloc[1:2, :])
-        #exit(1)
-        return temp_norm_prices_organized.iloc[:-1,:]
+        return temp_norm_prices_organized
 
     def __calculateGrowth(self,normalized_prices):
         temp_df = pd.DataFrame(data=None,index = ['growth'], columns=normalized_prices.columns)
@@ -168,7 +163,9 @@ class StockAnalysis:
         for column in normalized_prices.columns:
             yspace = normalized_prices[column].astype('float32').to_numpy()
             temp_df.loc['growth',column] = np.polyfit(x=xspace,y=yspace,deg=1)[0]
-        return temp_df
+
+        self.tempGrouth = temp_df[temp_df.iloc[-1,:].sort_values(ascending=False).index]
+        return self.tempGrouth
 
     def getPrice(self):
         return self.price
@@ -398,6 +395,7 @@ class StockAnalysis:
         self.tempNormPrices = self.getStockDataByCategory(initialAmount=initial_amount, startDate=start_date, endDate=end_date)
 
 
+
         #self.tempNormPrices = tempNormPrices[tempNormPrices.iloc[-1,:].sort_values().index]
         self.tempNormPrices.iloc[:,(first_position_number-1):(first_position_number+qt_stocks)].plot(title = f'Top ações: '
                                                     f'{first_position_number} até {first_position_number+qt_stocks-1}').plot(figSize=(30, 10))
@@ -405,13 +403,27 @@ class StockAnalysis:
     def plotAllTopStocks(self,folder_path='charts', start_date='2020-01-01',end_date='today', initial_amount=1):
         self.tempNormPrices = self.getStockDataByCategory(initialAmount=initial_amount, startDate=start_date,
                                                           endDate=end_date)
+
+        temp_qt_col = self.tempGrouth.columns.size
+        temp_df_index = list(range(1,temp_qt_col+1,1))
+        temp_df = pd.DataFrame(data=self.tempGrouth.copy().transpose())
+
+
+        temp_df['Position'] = temp_df_index
+
+        # temp_df.append(start_date, ignore_index = False)
+        temp_df.to_excel(f'{folder_path}\\stocks_trends.xlsx')
+
         total_stocks=self.tempNormPrices.columns.size
+
         for i in range(1,total_stocks,10):
             print(f'Ploting stocks from {i} to {i+10-1}')
-            print(f'{self.tempNormPrices.iloc[:, (i - 1):(i+ 10)].columns}')
+            #print(f'{self.tempNormPrices.iloc[:, (i - 1):(i+ 10)].columns}')
             self.tempNormPrices.iloc[:, (i - 1):(i+ 10)].plot(title=f'Top ações: '
                   f'{i} até {i + 10 - 1}').plot(figSize=(30, 10))
             plt.savefig(f'{folder_path}\\Top {i} até {i+10-1}.png')
+
+
 
     def plotHistogram(self):
         pass
@@ -481,3 +493,9 @@ class StockAnalysis:
                         validSetor.append(segmento)
 
         return validSetor
+
+    #TODO: criar diretório quando ele não existir
+    #TODO: salvar um excel com várias planilhas quando plotar todas as ações por categoria
+    #TODO: reutilizar o crescimento quando tiver que calcular usando a mesma data de início, de fim e as mesmas ações.
+    #TODO: colocar no excel as imagens
+    #plotar histogramas

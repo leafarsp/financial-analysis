@@ -8,10 +8,11 @@ def main():
     categories = pd.read_csv('testDataBases\\DataBasePython-Names.csv', index_col='Código')
     fa = FinancialAnalysis.StockAnalysis(prices, categories)
 
-    norm_prices = fa.getNormalizedPrices(startDate='2021')
-    print(norm_prices)
-    exit(1)
-    #fa.plotAllTopStocks(start_date='2021')
+    #norm_prices = fa.getNormalizedPrices(startDate='2021')
+    #print(norm_prices)
+    #exit(1)
+    fa.plotAllMarketByCategory(startDate='2021')
+    fa.plotAllTopStocks(start_date='2021')
 
     buttonPressed = False
     while (not buttonPressed):
