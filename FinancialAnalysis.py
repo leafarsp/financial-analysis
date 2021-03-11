@@ -1,6 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.stats import t
+import statsmodels.api as sm # statistic model
 import io
 
 #08/03/2021
@@ -423,11 +425,33 @@ class StockAnalysis:
                   f'{i} até {i + 10 - 1}').plot(figSize=(30, 10))
             plt.savefig(f'{folder_path}\\Top {i} até {i+10-1}.png')
 
+    def getStockInfo(self,stocks):
+        return self.stockCategories[stocks]
 
+    def plotHistogram(self, stock=None, start_date='2020-01-01', end_date='2020-12-31', bins=100):
+        if type(stock) == str:
+            tempReturns = self.getReturns().loc[pd.Timestamp(start_date):pd.Timestamp(end_date),stock]
+            x_list = np.linspace(tempReturns.min(), tempReturns.max(), bins)
+            # traçar a t-distribution
+            # para isso será uitilizada uma função que
+            # plota a bell curve de acordo com os cados
+            # histograma
+            # df:degrees of freedom
+            # loc = location
+            # scale = scale
+            params = t.fit(tempReturns)
+            df, loc, scale = params
 
-    def plotHistogram(self):
+            # pdf: probability function distribution
+            # é uma função genérica de probabilidade
+            # ajustada para os dados do histograma
+            y_list = t.pdf(x_list, df, loc, scale)
+            plt.plot(x_list, y_list)
+
+            tempReturns.hist(bins=bins,density=True)
+
+    def plotQQplots(self, stock=None, start_date='2020-01-01', end_date='2020-12-31', bins=100):
         pass
-
 
 
     def __auxPlotMkt(self,stockData,numOfValidSegmentos,numOfValidCats,setor,subsetor,segmento,folder,currentCat,
@@ -498,4 +522,4 @@ class StockAnalysis:
     #TODO: salvar um excel com várias planilhas quando plotar todas as ações por categoria
     #TODO: reutilizar o crescimento quando tiver que calcular usando a mesma data de início, de fim e as mesmas ações.
     #TODO: colocar no excel as imagens
-    #plotar histogramas
+

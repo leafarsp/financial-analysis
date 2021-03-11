@@ -11,8 +11,13 @@ def main():
     #norm_prices = fa.getNormalizedPrices(startDate='2021')
     #print(norm_prices)
     #exit(1)
-    fa.plotAllMarketByCategory(startDate='2021')
-    fa.plotAllTopStocks(start_date='2021')
+    #fa.plotAllMarketByCategory(startDate='2021')
+    #fa.plotAllTopStocks(start_date='2021')
+
+    fa.plotHistogram('WEGE3',start_date='2020',end_date='2021')
+    #returns=fa.getReturns()
+    #returns['WEGE3'][pd.Timestamp('2020-01-01'):pd.Timestamp('2020-12-31')].hist(bins=100)
+    #returns.loc[pd.Timestamp('2018-01-01'):pd.Timestamp('2020-12-31'),'WEGE3'].hist(bins=100)
 
     buttonPressed = False
     while (not buttonPressed):
