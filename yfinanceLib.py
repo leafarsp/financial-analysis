@@ -451,6 +451,7 @@ def calculateDaylyMonthlyRetsBySector(df_tickers, df_stock_data):
     for sector in sectors:
         df_test = get_tickers_by_sector_subsector_segment(df_tickers, sector = sector)
         df_avg_returns_selected = get_avg_returns_by_tickers(df_stock_data, df_test)
+        df_avg_returns_selected = remove_peak_outliers(df_avg_returns_selected, 8)
         sector_avg_daily_ret = calculate_avg_daily_return(df_avg_returns_selected['avg_return'])
         sector_avg_monthly_ret = calculate_avg_monthly_return(df_avg_returns_selected['avg_return'])
 
@@ -655,7 +656,7 @@ def remove_peak_outliers(df,lim=1.5):
     return df_clean, outliers
 
 
-def get_top_stocks(df_tickers, df_stock_data, df_sector=None, df_subsector=None, df_segment=None, n=30):
+def get_top_stocks(df_tickers, df_stock_data, df_sector=None, df_subsector=None, df_segment=None, n=30, outlier_return=7.):
   df_avg_ret = get_avg_daily_monthly_returns(df_stock_data)
 
   top_n_df = (
@@ -699,8 +700,8 @@ def get_top_stocks(df_tickers, df_stock_data, df_sector=None, df_subsector=None,
 
 
   df_avg_returns_selected, outliers = remove_peak_outliers(
-      df_avg_returns_selected,
-      7
+      df=df_avg_returns_selected,
+      lim=outlier_return
   )
   df_avg_returns_selected = df_avg_returns_selected.iloc[:,:n]
 
@@ -771,4 +772,43 @@ def get_top_stocks(df_tickers, df_stock_data, df_sector=None, df_subsector=None,
       how='left'
   ).drop(columns=['segment'])
 
-  return df_final, df_integrated_avg_returns, top_n_avg_monthly_return_mean, outliers
+  return df_final, df_avg_returns_selected, df_integrated_avg_returns, top_n_avg_monthly_return_mean, outliers
+
+
+def plot_stock_acc_ret_hist(stock, df_avg_returns_selected):
+
+
+  ret_stock = df_avg_returns_selected[stock]
+  mu, sigma = np.mean(ret_stock), np.std(ret_stock, ddof=1)
+  skewness = skew(ret_stock)
+  kurt = kurtosis(ret_stock)
+  kde = gaussian_kde(ret_stock)
+  # Estatísticas básicas
+
+  
+  fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+  count, bins, ignored = plt.hist(ret_stock, bins=50, edgecolor="black", alpha=0.7)
+
+  x = np.linspace(min(bins), max(bins), 100)
+
+  ticker_avg_daily_ret = calculate_avg_daily_return(ret_stock)
+  ticker_avg_monthly_ret = calculate_avg_monthly_return(ret_stock)
+
+
+  df_integrated_avg_returns = integrate_returns(ret_stock)
+
+
+  ax[1].set_title(f'{stock}, retorno médio: {ticker_avg_monthly_ret*100:.3f}% a.m., {ticker_avg_daily_ret*100:.5f}% a.d.\n Skew={skewness:.2f}, Kurt={kurt:.2f}')
+  ax[1].set_xlabel('Retorno Diário')
+  ax[1].set_ylabel('Frequência')
+
+  # Curva empírica (densidade observada suavizada
+  ax[1].plot(x, kde(x), 'b-', linewidth=2, label='Densidade empírica')
+  # ax[1].plot(ret_stock)
+
+  # Curva normal teórica
+  ax[1].plot(x, norm.pdf(x, mu, sigma), 'r--', linewidth=2, label='Normal teórica')
+  ax[0].plot(df_integrated_avg_returns.index, df_integrated_avg_returns, label='Retorno Acumulado')
+
+
+  plt.show()
