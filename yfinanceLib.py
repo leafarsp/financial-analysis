@@ -517,98 +517,116 @@ def calculateDaylyMonthlyRetsBySegment(df_tickers, df_stock_data):
 
   return df_avg_daily_monthly_returns
 
-def calculateDaylyMonthlyRetsBySector(df_tickers, df_stock_data):
+def calculateDaylyMonthlyRetsByCath(sec_subsec_seg, df_tickers, df_stock_data, outlier_return=7.5):
+    # DataFrame acumulador de outliers
+    df_outliers = pd.DataFrame()
+    # print(df_stock_data)
+    if sec_subsec_seg is None:
+        return None
+    elif sec_subsec_seg == 'SETOR ECONOMICO':
+      cath_upper = 'SETOR ECONÔMICO'
+      cath_low = 'sector'
+      pass
+    elif sec_subsec_seg == 'SUBSETOR':
+      cath_upper = 'SUBSETOR'
+      cath_low = 'sub sector'
+    elif sec_subsec_seg == 'SEGMENTO':
+      cath_upper = 'SEGMENTO'
+      cath_low = 'segment'
+    else:
+      return None
 
 
 
-    sectors = df_tickers['SETOR ECONÔMICO'].unique().tolist()
+    caths = df_tickers[cath_upper].unique().tolist()
 
-    df_columns = ['sector','avg_daily_ret','avg_monthly_ret']
+    df_columns = [cath_low,'avg_daily_ret','avg_monthly_ret']
 
     df_avg_daily_monthly_returns = pd.DataFrame(columns=df_columns)
 
-    for sector in sectors:
-        df_test = get_tickers_by_sector_subsector_segment(df_tickers, sector = sector)
+    for cath in caths:
         try:
-          df_avg_returns_selected = get_avg_returns_by_tickers(df_stock_data, df_test)
-          sector_avg_daily_ret = calculate_avg_daily_return(df_avg_returns_selected['avg_return'])
-          sector_avg_monthly_ret = calculate_avg_monthly_return(df_avg_returns_selected['avg_return'])
-        except Exception as e:
-          print(f'Setor {sector}: {e}')
-          sector_avg_daily_ret = 0.
-          sector_avg_monthly_ret = 0.
+          if sec_subsec_seg == 'SETOR ECONOMICO':
+            df_tickers_by_cath = get_tickers_by_sector_subsector_segment(df_tickers, sector = cath)
+          elif sec_subsec_seg == 'SUBSETOR':
+            df_tickers_by_cath = get_tickers_by_sector_subsector_segment(df_tickers, subsector = cath)
+          elif sec_subsec_seg == 'SEGMENTO':
+            df_tickers_by_cath = get_tickers_by_sector_subsector_segment(df_tickers, segment = cath)
 
-        data_line = [sector,sector_avg_daily_ret,sector_avg_monthly_ret]
+          df_avg_returns_selected = get_avg_returns_by_tickers(df_stock_data, df_tickers_by_cath)
+
+          df_avg_returns_selected, outlier = remove_peak_outliers(df_avg_returns_selected, outlier_return)
+          # 🔹 concatena os outliers no DataFrame acumulador
+
+          if outlier is not None and not outlier.empty:
+              outlier_df = outlier.reset_index()
+              outlier_df.columns = ['ticker', 'retavg_daily_return']
+
+              df_outliers = pd.concat(
+                  [df_outliers, outlier_df],
+                  ignore_index=True
+              )
+        except Exception as e:
+          print(f'{cath_upper} {cath}: {e}')
+          cath_avg_daily_ret = 0.
+          cath_avg_monthly_ret = 0.
+
+
+        # cath_avg_daily_ret = calculate_avg_daily_return(df_stock_data['avg_return'])
+        cath_avg_daily_ret = calculate_avg_daily_return(df_avg_returns_selected)
+
+
+        cath_avg_monthly_ret = calculate_avg_monthly_return(df_avg_returns_selected['avg_return'])
+
+        data_line = [cath,cath_avg_daily_ret,cath_avg_monthly_ret]
 
 
         # Adiciona a linha no final
         df_avg_daily_monthly_returns.loc[len(df_avg_daily_monthly_returns)] = data_line
 
 
-    return df_avg_daily_monthly_returns
+    return df_avg_daily_monthly_returns, df_outliers
 
-def calculateDaylyMonthlyRetsBySubSector(df_tickers, df_stock_data):
-
-
-
-    subsectors = df_tickers['SUBSETOR'].unique().tolist()
-
-    df_columns = ['sub sector','avg_daily_ret','avg_monthly_ret']
-
-    df_avg_daily_monthly_returns = pd.DataFrame(columns=df_columns)
-
-    for subsector in subsectors:
-        # print(f'\n\n{subsector}')
-        df_test = get_tickers_by_sector_subsector_segment(df_tickers, subsector = subsector)
-        # print(df_test.iloc[:,:3].head(5))
-        try:
-          df_avg_returns_selected = get_avg_returns_by_tickers(df_stock_data, df_test)
-          sector_avg_daily_ret = calculate_avg_daily_return(df_avg_returns_selected['avg_return'])
-          sector_avg_monthly_ret = calculate_avg_monthly_return(df_avg_returns_selected['avg_return'])
-        except Exception as e:
-          print(f'Sub setor {subsector}: {e}')
-          sector_avg_daily_ret = 0.
-          sector_avg_monthly_ret = 0.
+def calculateDaylyMonthlyRetsBySector(df_tickers, df_stock_data, outlier_return=7.5):
+    
+    df_avg_daily_monthly_returns, df_outliers = (
+       calculateDaylyMonthlyRetsByCath(
+          'SETOR ECONOMICO', 
+          df_tickers, 
+          df_stock_data, 
+          outlier_return=outlier_return
+      )
+    )
 
 
-        data_line = [subsector,sector_avg_daily_ret,sector_avg_monthly_ret]
+    return df_avg_daily_monthly_returns, df_outliers
+
+def calculateDaylyMonthlyRetsBySubSector(df_tickers, df_stock_data, outlier_return=7.5):
+    df_avg_daily_monthly_returns, df_outliers = (
+       calculateDaylyMonthlyRetsByCath(
+          'SUBSETOR', 
+          df_tickers, 
+          df_stock_data, 
+          outlier_return=outlier_return
+      )
+    )
 
 
-        # Adiciona a linha no final
-        df_avg_daily_monthly_returns.loc[len(df_avg_daily_monthly_returns)] = data_line
+    return df_avg_daily_monthly_returns, df_outliers
 
 
-    return df_avg_daily_monthly_returns
+def calculateDaylyMonthlyRetsBySegment(df_tickers, df_stock_data, outlier_return=7.5):
+    df_avg_daily_monthly_returns, df_outliers = (
+       calculateDaylyMonthlyRetsByCath(
+          'SEGMENTO', 
+          df_tickers, 
+          df_stock_data, 
+          outlier_return=outlier_return
+      )
+    )
 
 
-def calculateDaylyMonthlyRetsBySegment(df_tickers, df_stock_data):
-
-  segments = df_tickers['SEGMENTO'].unique().tolist()
-
-  df_columns = ['segment','avg_daily_ret','avg_monthly_ret']
-
-  df_avg_daily_monthly_returns = pd.DataFrame(columns=df_columns)
-
-  for segment in segments:
-      df_test = get_tickers_by_sector_subsector_segment(df_tickers, segment = segment)
-
-      try:
-        df_avg_returns_selected = get_avg_returns_by_tickers(df_stock_data, df_test)
-        sector_avg_daily_ret = calculate_avg_daily_return(df_avg_returns_selected['avg_return'])
-        sector_avg_monthly_ret = calculate_avg_monthly_return(df_avg_returns_selected['avg_return'])
-      except Exception as e:
-          print(f'Segmento {segment}: {e}')
-          sector_avg_daily_ret = 0.
-          sector_avg_monthly_ret = 0.
-
-      data_line = [segment,sector_avg_daily_ret,sector_avg_monthly_ret]
-
-
-      # Adiciona a linha no final
-      df_avg_daily_monthly_returns.loc[len(df_avg_daily_monthly_returns)] = data_line
-
-
-  return df_avg_daily_monthly_returns
+    return df_avg_daily_monthly_returns, df_outliers
 
 def remove_outliers_iqr(series):
     Q1 = series.quantile(0.25)
