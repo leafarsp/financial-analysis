@@ -830,3 +830,109 @@ def plot_stock_acc_ret_hist(stock, df_avg_returns_selected):
 
 
   plt.show()
+
+
+
+def analyze_cath(sec_subsec_seg, cath, df_avg_daily_monthly_returns, tickers_df, df_all_stock_param, df_avg_ret):
+  """
+  Processa um único setor e retorna:
+  - avg_monthly_ret
+  - df_integrated_avg_returns
+  - df_avg_ret_sector (ranking das ações do setor)
+  """
+
+  if sec_subsec_seg is None:
+        return None
+  elif sec_subsec_seg == 'SETOR ECONOMICO':
+    cath_upper = 'SETOR ECONÔMICO'
+    cath_low = 'sector'
+     # Seleciona tickers do setor
+    df_cath_tickers = get_tickers_by_sector_subsector_segment(
+        tickers_df,
+        sector=cath
+    )
+    
+  elif sec_subsec_seg == 'SUBSETOR':
+    cath_upper = 'SUBSETOR'
+    cath_low = 'sub sector'
+    df_cath_tickers = get_tickers_by_sector_subsector_segment(
+        tickers_df,
+        subsector=cath
+    )
+  elif sec_subsec_seg == 'SEGMENTO':
+    cath_upper = 'SEGMENTO'
+    cath_low = 'segment'
+    df_cath_tickers = get_tickers_by_sector_subsector_segment(
+        tickers_df,
+        segment=cath
+    )
+  else:
+    return None
+
+  filtro = (
+      (df_avg_daily_monthly_returns[cath_low] == cath)
+  )
+
+  if not filtro.any():
+      return None
+
+  avg_monthly_ret = df_avg_daily_monthly_returns.loc[
+      filtro, 'avg_monthly_ret'
+  ].iloc[0]
+
+ 
+
+  # Retornos médios dos tickers do setor
+  df_avg_returns_selected = get_avg_returns_by_tickers(
+      df_all_stock_param,
+      df_cath_tickers
+  )
+
+  # Retornos integrados
+  df_integrated_avg_returns = integrate_returns(
+      df_avg_returns_selected
+  )
+
+  # Ranking das ações do setor
+  tickers_filtered = df_cath_tickers['Ticker'].to_list()
+
+  df_avg_ret_cath = (
+      df_avg_ret
+      .loc[df_avg_ret['Ticker'].isin(tickers_filtered)]
+      .sort_values(by='Avg Monthly Return', ascending=False)
+  )
+
+  return {
+      f'{cath_low}': cath,
+      'avg_monthly_ret': avg_monthly_ret,
+      'df_integrated_avg_returns': df_integrated_avg_returns,
+      f'df_avg_ret_{cath_low}': df_avg_ret_cath
+  }
+
+def analyze_sector(sector, df_avg_daily_monthly_returns, tickers_df, df_all_stock_param, df_avg_ret):
+  """
+  Processa um único setor e retorna:
+  - avg_monthly_ret
+  - df_integrated_avg_returns
+  - df_avg_ret_sector (ranking das ações do setor)
+  """
+  return analyze_cath('SETOR ECONOMICO', sector, df_avg_daily_monthly_returns, tickers_df, df_all_stock_param, df_avg_ret)
+
+def analyze_subsector(subsector, df_avg_daily_monthly_returns, tickers_df, df_all_stock_param, df_avg_ret):
+  """
+  Processa um único setor e retorna:
+  - avg_monthly_ret
+  - df_integrated_avg_returns
+  - df_avg_ret_sector (ranking das ações do setor)
+  """
+  return analyze_cath('SUBSETOR', subsector, df_avg_daily_monthly_returns, tickers_df, df_all_stock_param, df_avg_ret)
+
+def analyze_segment(segment, df_avg_daily_monthly_returns, tickers_df, df_all_stock_param, df_avg_ret):
+  """
+  Processa um único setor e retorna:
+  - avg_monthly_ret
+  - df_integrated_avg_returns
+  - df_avg_ret_sector (ranking das ações do setor)
+  """
+  return analyze_cath('SEGMENTO', segment, df_avg_daily_monthly_returns, tickers_df, df_all_stock_param, df_avg_ret)
+  
