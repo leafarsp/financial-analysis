@@ -840,7 +840,7 @@ def analyze_cath(sec_subsec_seg, cath, df_avg_daily_monthly_returns, tickers_df,
   - df_integrated_avg_returns
   - df_avg_ret_sector (ranking das ações do setor)
   """
-
+  
   if sec_subsec_seg is None:
         return None
   elif sec_subsec_seg == 'SETOR ECONOMICO':
@@ -874,19 +874,24 @@ def analyze_cath(sec_subsec_seg, cath, df_avg_daily_monthly_returns, tickers_df,
   )
 
   if not filtro.any():
-      return None
+    return None
 
+  
   avg_monthly_ret = df_avg_daily_monthly_returns.loc[
       filtro, 'avg_monthly_ret'
   ].iloc[0]
 
- 
+  try:
+    # Retornos médios dos tickers do setor
+    df_avg_returns_selected = get_avg_returns_by_tickers(
+        df_all_stock_param,
+        df_cath_tickers
+    )
+  except Exception as e:
+    print(e)
+    return None
 
-  # Retornos médios dos tickers do setor
-  df_avg_returns_selected = get_avg_returns_by_tickers(
-      df_all_stock_param,
-      df_cath_tickers
-  )
+ 
 
   # Retornos integrados
   df_integrated_avg_returns = integrate_returns(
