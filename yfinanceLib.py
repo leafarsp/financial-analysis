@@ -576,7 +576,7 @@ def calculateDaylyMonthlyRetsByCath(sec_subsec_seg, df_tickers, df_stock_data, o
         cath_avg_daily_ret = calculate_avg_daily_return(df_avg_returns_selected)
 
 
-        cath_avg_monthly_ret = calculate_avg_monthly_return(df_avg_returns_selected['avg_return'])
+        cath_avg_monthly_ret = calculate_avg_monthly_return(cath_avg_daily_ret)
 
         data_line = [cath,cath_avg_daily_ret,cath_avg_monthly_ret]
 
